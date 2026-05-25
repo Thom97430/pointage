@@ -484,6 +484,8 @@
         <button class="tab" onclick="switchTab('pointings')">Pointages</button>
         <button class="tab" onclick="switchTab('summary')">Récapitulatif</button>
         <button class="tab" onclick="switchTab('settings')">Paramètres</button>
+        <button class="tab" onclick="switchTab('ips')">IP autorisées</button>
+        <button class="tab" onclick="switchTab('logs')">Logs sécurité</button>
       </div>
 
       <!-- TAB: Employés -->
@@ -574,6 +576,46 @@
           <button class="btn btn-primary" onclick="changePassword()">Mettre à jour</button>
         </div>
         <div class="card" style="max-width:400px; margin-top:1rem;">
+          <div class="card-title">Sauvegarde &amp; Restauration</div>
+          <div class="msg" id="backupMsg"></div>
+
+          <p class="text-sm text-muted mb-2" style="line-height:1.6">
+            Le backup contient <strong>toutes les données</strong> : employés, NIP hashés, pointages complets et compte admin.<br>
+            Il peut être réinjecté à tout moment pour restaurer un état antérieur.
+          </p>
+
+          <div style="display:flex; flex-direction:column; gap:0.8rem;">
+            <button class="btn btn-primary" onclick="downloadBackup()">
+              ↓ Télécharger le backup (.db)
+            </button>
+
+            <div style="border-top:1px solid var(--border); padding-top:0.8rem;">
+              <label style="margin-bottom:0.5rem;">Restaurer depuis un backup</label>
+              <input type="file" id="restoreFile" accept=".db" style="margin-bottom:0.6rem; font-size:0.82rem;">
+              <button class="btn btn-ghost" onclick="uploadRestore()" style="border-color:var(--accent);color:var(--accent)">
+                ↑ Restaurer ce backup
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="max-width:400px; margin-top:1rem;">
+          <div class="card-title" style="color:var(--accent)">⚠️ Zone de danger</div>
+          <div class="msg" id="resetMsg"></div>
+          <p class="text-sm text-muted mb-2" style="line-height:1.6">
+            Efface <strong>tous les employés et tous les pointages</strong> de façon irréversible.<br>
+            Le compte admin est conservé. Un backup automatique est créé sur le serveur avant l'effacement.
+          </p>
+          <div class="form-group">
+            <label>Confirmez avec votre mot de passe admin</label>
+            <input type="password" id="resetPassword" placeholder="••••••••">
+          </div>
+          <button class="btn btn-danger btn-full" onclick="doReset()">
+            Tout effacer définitivement
+          </button>
+        </div>
+
+        <div class="card" style="max-width:400px; margin-top:1rem;">
           <div class="card-title">Informations RGPD</div>
           <p class="text-sm text-muted" style="line-height:1.7">
             ✅ Toutes les données sont stockées <strong>localement</strong> sur votre serveur (fichier <code>badgeuse.db</code>).<br>
@@ -582,6 +624,77 @@
             ✅ Les sessions expirent automatiquement après 8h.<br>
             ✅ Export CSV disponible pour les droits d'accès RGPD.
           </p>
+        </div>
+      </div>
+
+      <!-- TAB: Logs sécurité -->
+      <div class="tab-content" id="tab-logs">
+        <div class="admin-header">
+          <div>
+            <div style="font-size:0.8rem; color:var(--muted)">200 derniers événements — actualisé à chaque ouverture</div>
+          </div>
+          <button class="btn btn-ghost" onclick="loadLogs()">↻ Actualiser</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div id="logsContainer" style="font-family:'DM Mono',monospace; font-size:0.75rem; line-height:1.8; max-height:500px; overflow-y:auto; padding:1rem;">
+            <div class="empty-state">Chargement…</div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="tab-content" id="tab-ips">
+        <div style="max-width:560px">
+
+          <div class="card" style="margin-bottom:1rem">
+            <div class="card-title">Mon IP actuelle</div>
+            <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+              <code class="mono" id="myIpDisplay" style="font-size:1.05rem; background:var(--paper); padding:0.4rem 0.8rem; border-radius:3px; border:1px solid var(--border)">Détection…</code>
+              <div style="display:flex; gap:0.5rem; align-items:center; flex:1; flex-wrap:wrap;">
+                <input type="text" id="myIpLabel" placeholder="Nom ex: Bureau principal" style="flex:1; min-width:160px;">
+                <button class="btn btn-primary" onclick="addMyIp()">+ Autoriser cette IP</button>
+              </div>
+            </div>
+            <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);">
+              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.8rem;">
+                <div>
+                  <div style="font-size:0.85rem; font-weight:600;">Autoriser tout mon réseau WiFi</div>
+                  <div class="text-sm text-muted" style="margin-top:0.2rem">Tous les appareils connectés à ce WiFi pourront pointer — téléphones, tablettes, etc.</div>
+                </div>
+                <button class="btn btn-in" id="subnetBtn" onclick="addMySubnet()">⊕ Autoriser tout le réseau</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:1rem">
+            <div class="card-title">Ajouter une IP manuellement</div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:flex-end;">
+              <div class="form-group" style="margin:0; flex:1; min-width:140px;">
+                <label>Adresse IP</label>
+                <input type="text" id="manualIp" placeholder="192.168.1 ou 82.64.123.45" inputmode="numeric">
+              </div>
+              <div class="form-group" style="margin:0; flex:1; min-width:160px;">
+                <label>Nom</label>
+                <input type="text" id="manualIpLabel" placeholder="Agence Paris">
+              </div>
+              <button class="btn btn-primary" style="align-self:flex-end" onclick="addManualIp()">Ajouter</button>
+            </div>
+            <div class="msg" id="ipMsg" style="margin-top:0.8rem"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">IP autorisées à pointer</div>
+            <p class="text-sm text-muted" style="margin-bottom:1rem; line-height:1.6">
+              Seules ces adresses IP peuvent accéder au pointage. L'interface admin reste accessible de partout.
+            </p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Adresse IP</th><th>Nom</th><th>Ajoutée le</th><th></th></tr></thead>
+                <tbody id="ipBody"><tr><td colspan="4" class="empty-state">Chargement…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -677,7 +790,7 @@ async function doPoint(type) {
     return;
   }
   try {
-    const r = await fetch('/api/point', {
+    const r = await fetch('/api/point', { credentials:'include',
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({pin, type})
@@ -741,7 +854,7 @@ async function doLogin() {
   const msg = document.getElementById('loginMsg');
   msg.className = 'msg'; msg.textContent = '';
   try {
-    const r = await fetch('/api/admin/login', {
+    const r = await fetch('/api/admin/login', { credentials:'include',
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({username:u, password:p}), credentials:'include'
     });
@@ -772,6 +885,8 @@ function switchTab(name) {
   if (name === 'pointings') loadPointings();
   if (name === 'summary') loadSummary();
   if (name === 'employees') loadEmployees();
+  if (name === 'ips') loadIps();
+  if (name === 'logs') loadLogs();
 }
 
 // ====== EMPLOYEES ======
@@ -853,7 +968,7 @@ async function saveEmployee() {
 }
 
 async function toggleActive(id, current) {
-  await fetch(`/api/admin/employees/${id}`, {
+  await fetch(`/api/admin/employees/${id}`, { credentials:'include',
     method:'PATCH', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({active: !current}), credentials:'include'
   });
@@ -929,6 +1044,217 @@ function exportCsv() {
   window.open(`/api/admin/export/csv?from=${from}&to=${to}`, '_blank');
 }
 
+// ====== LOGS ======
+async function loadLogs() {
+  const container = document.getElementById('logsContainer');
+  container.innerHTML = '<div class="empty-state">Chargement…</div>';
+  try {
+    const r = await fetch('/api/admin/logs', {credentials:'include'});
+    const data = await r.json();
+    if (!data.lines || data.lines.length === 0) {
+      container.innerHTML = '<div class="empty-state">Aucun événement enregistré</div>';
+      return;
+    }
+    container.innerHTML = data.lines.map(line => {
+      let color = 'var(--ink)';
+      if (line.includes('[BLOCK]')) color = 'var(--accent)';
+      else if (line.includes('[WARN]'))  color = '#c87a0a';
+      else if (line.includes('[INFO]'))  color = 'var(--in)';
+      return `<div style="color:${color}; padding:0.1rem 0; border-bottom:1px solid #f5f0e8">${escHtml(line)}</div>`;
+    }).join('');
+  } catch {
+    container.innerHTML = '<div class="empty-state">Erreur de chargement</div>';
+  }
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ====== GESTION IP ======
+let myCurrentIp = '';
+
+async function loadMyIp() {
+  try {
+    const r = await fetch('/api/my-ip', {credentials:'include'});
+    const data = await r.json();
+    myCurrentIp = data.ip;
+    document.getElementById('myIpDisplay').textContent = myCurrentIp;
+    // Pré-remplir le sous-réseau détecté
+    const subnet = myCurrentIp.split('.').slice(0,3).join('.');
+    document.getElementById('subnetBtn').dataset.subnet = subnet;
+  } catch { document.getElementById('myIpDisplay').textContent = 'Non détectée'; }
+}
+
+async function loadIps() {
+  loadMyIp();
+  const r = await fetch('/api/admin/ips', {credentials:'include'});
+  if (!r.ok) return;
+  const ips = await r.json();
+  const tbody = document.getElementById('ipBody');
+  if (ips.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Aucune règle autorisée</td></tr>'; return; }
+  tbody.innerHTML = ips.map(ip => {
+    const isLocal = ['127.0.0.1','::1'].includes(ip.ip);
+    const badge = ip.is_subnet
+      ? `<span class="badge" style="background:#e8f4ff;color:#1a5c8a">Réseau ${ip.ip}.*</span>`
+      : `<code class="mono" style="font-size:0.82rem">${ip.ip}</code>`;
+    return `<tr>
+      <td>${badge}</td>
+      <td class="text-sm">${ip.label || '<span class="text-muted">—</span>'}</td>
+      <td class="mono text-sm text-muted">${(ip.created_at||'').slice(0,10)}</td>
+      <td>${isLocal
+        ? '<span class="text-muted text-sm">Système</span>'
+        : `<button class="btn btn-ghost text-sm" style="padding:0.3rem 0.6rem;color:var(--accent)" onclick="deleteIp(${ip.id})">Supprimer</button>`
+      }</td>
+    </tr>`;
+  }).join('');
+}
+
+async function addMySubnet() {
+  const btn = document.getElementById('subnetBtn');
+  const subnet = btn.dataset.subnet;
+  const msg = document.getElementById('ipMsg');
+  if (!subnet) { msg.className='msg msg-err show'; msg.textContent='IP non détectée, réessayez'; return; }
+  const label = `Réseau local (${subnet}.*)`;
+  const r = await fetch('/api/admin/ips', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ip: subnet, label, is_subnet: true}),
+    credentials: 'include'
+  });
+  const data = await r.json();
+  msg.className = 'msg ' + (data.success ? 'msg-ok' : 'msg-err') + ' show';
+  msg.textContent = data.success
+    ? `✅ Tous les appareils sur ${subnet}.* sont maintenant autorisés`
+    : '❌ ' + data.error;
+  if (data.success) loadIps();
+}
+
+async function addMyIp() {
+  if (!myCurrentIp) return;
+  const label = document.getElementById('myIpLabel').value.trim() || 'Bureau';
+  await submitIp(myCurrentIp, label, false);
+  document.getElementById('myIpLabel').value = '';
+}
+
+async function addManualIp() {
+  const ip = document.getElementById('manualIp').value.trim();
+  const label = document.getElementById('manualIpLabel').value.trim();
+  // Détection automatique : 3 segments = sous-réseau, 4 segments = IP fixe
+  const isSubnet = ip.split('.').length === 3;
+  await submitIp(ip, label, isSubnet);
+  document.getElementById('manualIp').value = '';
+  document.getElementById('manualIpLabel').value = '';
+}
+
+async function submitIp(ip, label, is_subnet=false) {
+  const msg = document.getElementById('ipMsg');
+  msg.className = 'msg'; msg.textContent = '';
+  const r = await fetch('/api/admin/ips', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ip, label, is_subnet}),
+    credentials: 'include'
+  });
+  const data = await r.json();
+  if (data.success) {
+    msg.className = 'msg msg-ok show';
+    msg.textContent = `✅ ${ip} ajoutée avec succès`;
+    loadIps();
+  } else {
+    msg.className = 'msg msg-err show';
+    msg.textContent = '❌ ' + data.error;
+  }
+}
+
+async function deleteIp(id) {
+  if (!confirm('Supprimer cette IP ? Les appareils sur ce réseau ne pourront plus pointer.')) return;
+  const r = await fetch(`/api/admin/ips/${id}`, {method:'DELETE', credentials:'include'});
+  const data = await r.json();
+  if (data.success) loadIps();
+  else alert(data.error);
+}
+
+// ====== RESET TOTAL ======
+async function doReset() {
+  const password = document.getElementById('resetPassword').value;
+  const msg = document.getElementById('resetMsg');
+  msg.className = 'msg'; msg.textContent = '';
+
+  if (!password) {
+    msg.className = 'msg msg-err show';
+    msg.textContent = 'Saisissez votre mot de passe pour confirmer';
+    return;
+  }
+
+  if (!confirm('⛔ ATTENTION\n\nCette action va supprimer TOUS les employés et TOUS les pointages.\n\nUn backup sera créé sur le serveur, mais cette action est irréversible depuis l\'interface.\n\nÊtes-vous absolument certain ?')) return;
+  if (!confirm('Dernière confirmation — tout effacer ?')) return;
+
+  try {
+    const r = await fetch('/api/admin/reset', { credentials:'include',
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ password }),
+      credentials: 'include'
+    });
+    const data = await r.json();
+    if (data.success) {
+      msg.className = 'msg msg-ok show';
+      msg.textContent = '✅ Base effacée. Un backup a été conservé sur le serveur.';
+      document.getElementById('resetPassword').value = '';
+      loadEmployees();
+    } else {
+      msg.className = 'msg msg-err show';
+      msg.textContent = '❌ ' + data.error;
+    }
+  } catch(e) {
+    msg.className = 'msg msg-err show';
+    msg.textContent = 'Erreur de connexion';
+  }
+}
+
+// ====== BACKUP / RESTORE ======
+function downloadBackup() {
+  window.open('/api/admin/backup', '_blank');
+}
+
+async function uploadRestore() {
+  const file = document.getElementById('restoreFile').files[0];
+  const msg = document.getElementById('backupMsg');
+  msg.className = 'msg'; msg.textContent = '';
+
+  if (!file) {
+    msg.className = 'msg msg-err show';
+    msg.textContent = 'Sélectionnez un fichier .db d\'abord';
+    return;
+  }
+
+  if (!confirm(`⚠️ Restaurer "${file.name}" ?\n\nToutes les données actuelles seront remplacées par celles du backup.\nUne copie de sécurité (.bak) sera conservée sur le serveur.`)) return;
+
+  const formData = new FormData();
+  formData.append('db', file);
+
+  try {
+    const r = await fetch('/api/admin/restore', { credentials:'include',
+      method: 'POST',
+      body: formData,
+      credentials: 'include'
+    });
+    const data = await r.json();
+    if (data.success) {
+      msg.className = 'msg msg-ok show';
+      msg.textContent = '✅ ' + data.message + ' — rechargement en cours…';
+      setTimeout(() => location.reload(), 2000);
+    } else {
+      msg.className = 'msg msg-err show';
+      msg.textContent = '❌ ' + data.error;
+    }
+  } catch(e) {
+    msg.className = 'msg msg-err show';
+    msg.textContent = 'Erreur de connexion';
+  }
+}
+
 // ====== PASSWORD ======
 async function changePassword() {
   const current = document.getElementById('pwCurrent').value;
@@ -936,7 +1262,7 @@ async function changePassword() {
   const confirm = document.getElementById('pwConfirm').value;
   const msg = document.getElementById('pwMsg');
   if (newP !== confirm) { msg.className='msg msg-err show'; msg.textContent='Les mots de passe ne correspondent pas'; return; }
-  const r = await fetch('/api/admin/change-password', {
+  const r = await fetch('/api/admin/change-password', { credentials:'include',
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({current, newPassword:newP}), credentials:'include'
   });
