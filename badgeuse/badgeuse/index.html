@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Badgeuse — Pointage</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --ink: #0d0d0d;
+    --paper: #f5f0e8;
+    --card: #ffffff;
+    --accent: #c8390a;
+    --accent2: #1a5c3a;
+    --muted: #8a8070;
+    --border: #d4cdc0;
+    --shadow: rgba(13,13,13,0.08);
+    --in: #1a5c3a;
+    --out: #c8390a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ======= HEADER ======= */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 2rem;
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .logo {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .logo span { color: var(--accent); }
+
+  .header-clock {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.3rem;
+    letter-spacing: 0.08em;
+    color: #e0d9cc;
+  }
+
+  .header-date {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: right;
+    letter-spacing: 0.05em;
+  }
+
+  nav {
+    display: flex;
+    gap: 0;
+    background: var(--ink);
+    border-top: 1px solid #2a2a2a;
+    padding: 0 2rem;
+  }
+
+  nav button {
+    background: none;
+    border: none;
+    color: #666;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.7rem 1.2rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  nav button:hover { color: var(--paper); }
+  nav button.active { color: var(--paper); border-bottom-color: var(--accent); }
+
+  /* ======= MAIN CONTENT ======= */
+  main { flex: 1; padding: 2rem; max-width: 900px; margin: 0 auto; width: 100%; }
+
+  /* ======= PAGE VIEWS ======= */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ======= POINTAGE PAGE ======= */
+  .pointage-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  @media (max-width: 600px) { .pointage-layout { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.8rem;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+
+  .card-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pin-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 2rem;
+    letter-spacing: 0.3em;
+    text-align: center;
+    padding: 0.8rem;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    margin-bottom: 1rem;
+    min-height: 3.5rem;
+    color: var(--ink);
+    transition: all 0.2s;
+  }
+  .pin-display.error { border-color: var(--accent); background: #fff0ee; color: var(--accent); }
+  .pin-display.success-in { border-color: var(--in); background: #f0fff6; color: var(--in); }
+  .pin-display.success-out { border-color: var(--out); background: #fff0ee; color: var(--out); }
+
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .numpad button {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 500;
+    padding: 0.9rem;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.1s;
+    color: var(--ink);
+  }
+  .numpad button:hover { background: var(--ink); color: var(--paper); transform: translateY(-1px); }
+  .numpad button:active { transform: translateY(0); }
+  .numpad button.del { font-size: 1rem; color: var(--muted); }
+  .numpad button.zero { grid-column: span 2; }
+
+  .action-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+  }
+
+  .btn {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.85rem 1rem;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn-in { background: var(--in); color: white; }
+  .btn-out { background: var(--out); color: white; }
+  .btn-primary { background: var(--ink); color: var(--paper); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--ink); }
+  .btn-danger { background: var(--accent); color: white; }
+  .btn-full { grid-column: span 2; width: 100%; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* Recent pointings */
+  .recent-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .recent-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.7rem 0.9rem;
+    background: var(--paper);
+    border-radius: 3px;
+    font-size: 0.85rem;
+  }
+  .badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .badge-in { background: #d4f5e4; color: var(--in); }
+  .badge-out { background: #fde8e2; color: var(--out); }
+  .recent-time { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--muted); margin-left: auto; }
+
+  /* ======= ADMIN PAGE ======= */
+  .admin-login {
+    max-width: 380px;
+    margin: 3rem auto;
+  }
+
+  .form-group { margin-bottom: 1rem; }
+  label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+  input, select {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--paper);
+    color: var(--ink);
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--ink); }
+
+  /* Admin dashboard */
+  .admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+  .tab {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.7rem 1.2rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    color: var(--muted);
+    margin-bottom: -1px;
+  }
+  .tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th {
+    text-align: left;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+  td { padding: 0.75rem 0.8rem; border-bottom: 1px solid #f0ece4; vertical-align: middle; }
+  tr:hover td { background: #faf8f4; }
+  td:last-child { text-align: right; }
+  .mono { font-family: 'DM Mono', monospace; }
+
+  /* Date filter */
+  .filter-row {
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-end;
+    margin-bottom: 1.2rem;
+    flex-wrap: wrap;
+  }
+  .filter-row .form-group { margin: 0; flex: 1; min-width: 140px; }
+
+  /* Status */
+  .status-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 0.4rem;
+  }
+  .dot-active { background: var(--in); }
+  .dot-inactive { background: var(--muted); }
+
+  /* Msg */
+  .msg {
+    padding: 0.8rem 1rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .msg.show { display: block; }
+  .msg-ok { background: #d4f5e4; color: var(--in); border: 1px solid #a8e8c4; }
+  .msg-err { background: #fde8e2; color: var(--out); border: 1px solid #f5c4b8; }
+
+  /* Modal */
+  .modal-bg {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(13,13,13,0.5);
+    backdrop-filter: blur(2px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 4px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  .modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1.2rem; }
+  .modal-btns { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top: 1.2rem; }
+
+  /* Summary cards */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+  }
+  .summary-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1rem;
+  }
+  .summary-name { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
+  .summary-detail { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--muted); }
+  .summary-detail span { color: var(--ink); font-weight: 500; }
+
+  /* Util */
+  .flex-gap { display: flex; gap: 0.5rem; }
+  .text-muted { color: var(--muted); }
+  .text-sm { font-size: 0.82rem; }
+  .mb-1 { margin-bottom: 0.5rem; }
+  .mb-2 { margin-bottom: 1rem; }
+  h2 { font-size: 1.2rem; font-weight: 700; }
+  .page-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.2rem; }
+  .page-sub { font-size: 0.8rem; color: var(--muted); }
+
+  /* Confirm delete */
+  .danger-zone { border: 1px solid #fde8e2; border-radius: 3px; padding: 1rem; margin-top: 1rem; }
+  .danger-zone h4 { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.8rem; }
+
+  .empty-state { text-align: center; padding: 3rem; color: var(--muted); font-size: 0.9rem; }
+
+  /* Flash animation */
+  @keyframes flash { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .flash { animation: flash 0.4s ease 2; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Badge<span>·</span>Pro</div>
+  <div>
+    <div class="header-clock" id="clock">--:--:--</div>
+    <div class="header-date" id="headerDate">--</div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showPage('pointage')">Pointage</button>
+  <button onclick="showPage('admin')">Administration</button>
+</nav>
+
+<main>
+
+  <!-- ===== PAGE POINTAGE ===== -->
+  <div class="page active" id="page-pointage">
+    <div class="pointage-layout">
+
+      <div class="card">
+        <div class="card-title">Saisir votre NIP</div>
+        <div class="pin-display" id="pinDisplay">· · · ·</div>
+
+        <div class="numpad">
+          <button onclick="numpad('1')">1</button>
+          <button onclick="numpad('2')">2</button>
+          <button onclick="numpad('3')">3</button>
+          <button onclick="numpad('4')">4</button>
+          <button onclick="numpad('5')">5</button>
+          <button onclick="numpad('6')">6</button>
+          <button onclick="numpad('7')">7</button>
+          <button onclick="numpad('8')">8</button>
+          <button onclick="numpad('9')">9</button>
+          <button class="zero" onclick="numpad('0')">0</button>
+          <button class="del" onclick="numpad('del')">⌫</button>
+        </div>
+
+        <div class="action-btns">
+          <button class="btn btn-in" onclick="doPoint('in')">▶ Arrivée</button>
+          <button class="btn btn-out" onclick="doPoint('out')">■ Départ</button>
+          <button class="btn btn-ghost btn-full" onclick="clearPin()">Effacer</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Derniers pointages du jour</div>
+        <div class="recent-list" id="recentList">
+          <div class="empty-state text-sm">Aucun pointage aujourd'hui</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== PAGE ADMIN ===== -->
+  <div class="page" id="page-admin">
+
+    <!-- LOGIN -->
+    <div id="adminLogin" class="admin-login">
+      <div class="card">
+        <div class="card-title">Connexion Administration</div>
+        <div class="msg" id="loginMsg"></div>
+        <div class="form-group">
+          <label>Identifiant</label>
+          <input type="text" id="adminUser" value="admin" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <input type="password" id="adminPass" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="doLogin()">Se connecter</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="adminDashboard" style="display:none">
+      <div class="admin-header">
+        <div>
+          <div class="page-title">Administration</div>
+          <div class="page-sub">Gestion des employés et des pointages</div>
+        </div>
+        <button class="btn btn-ghost" onclick="doLogout()">Déconnexion</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('employees')">Employés</button>
+        <button class="tab" onclick="switchTab('pointings')">Pointages</button>
+        <button class="tab" onclick="switchTab('summary')">Récapitulatif</button>
+        <button class="tab" onclick="switchTab('settings')">Paramètres</button>
+      </div>
+
+      <!-- TAB: Employés -->
+      <div class="tab-content active" id="tab-employees">
+        <div class="admin-header">
+          <div></div>
+          <button class="btn btn-primary" onclick="openAddEmp()">+ Ajouter un employé</button>
+        </div>
+        <div class="msg" id="empMsg"></div>
+        <div class="table-wrap">
+          <table id="empTable">
+            <thead>
+              <tr><th>Nom</th><th>Rôle</th><th>Statut</th><th>Créé le</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="empBody">
+              <tr><td colspan="5" class="empty-state">Chargement…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: Pointages -->
+      <div class="tab-content" id="tab-pointings">
+        <div class="filter-row">
+          <div class="form-group">
+            <label>Du</label>
+            <input type="date" id="pFrom" onchange="loadPointings()">
+          </div>
+          <div class="form-group">
+            <label>Au</label>
+            <input type="date" id="pTo" onchange="loadPointings()">
+          </div>
+          <div class="form-group">
+            <label>Employé</label>
+            <select id="pEmployee" onchange="loadPointings()">
+              <option value="">Tous</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost" onclick="exportCsv()" title="Exporter CSV">↓ CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Employé</th><th>Type</th><th>Date</th><th>Heure</th></tr>
+            </thead>
+            <tbody id="pointBody">
+              <tr><td colspan="4" class="empty-state">Sélectionnez une période</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: Résumé -->
+      <div class="tab-content" id="tab-summary">
+        <div class="filter-row mb-2">
+          <div class="form-group">
+            <label>Du</label>
+            <input type="date" id="sFrom" onchange="loadSummary()">
+          </div>
+          <div class="form-group">
+            <label>Au</label>
+            <input type="date" id="sTo" onchange="loadSummary()">
+          </div>
+          <button class="btn btn-ghost" onclick="loadSummary()">Actualiser</button>
+        </div>
+        <div class="summary-grid" id="summaryGrid">
+          <div class="empty-state">Sélectionnez une période</div>
+        </div>
+      </div>
+
+      <!-- TAB: Paramètres -->
+      <div class="tab-content" id="tab-settings">
+        <div class="card" style="max-width:400px">
+          <div class="card-title">Changer le mot de passe admin</div>
+          <div class="msg" id="pwMsg"></div>
+          <div class="form-group">
+            <label>Mot de passe actuel</label>
+            <input type="password" id="pwCurrent">
+          </div>
+          <div class="form-group">
+            <label>Nouveau mot de passe (8 min.)</label>
+            <input type="password" id="pwNew">
+          </div>
+          <div class="form-group">
+            <label>Confirmer</label>
+            <input type="password" id="pwConfirm">
+          </div>
+          <button class="btn btn-primary" onclick="changePassword()">Mettre à jour</button>
+        </div>
+        <div class="card" style="max-width:400px; margin-top:1rem;">
+          <div class="card-title">Informations RGPD</div>
+          <p class="text-sm text-muted" style="line-height:1.7">
+            ✅ Toutes les données sont stockées <strong>localement</strong> sur votre serveur (fichier <code>badgeuse.db</code>).<br>
+            ✅ Aucune donnée n'est transmise à des tiers.<br>
+            ✅ Les NIP sont hashés (SHA-256) — jamais stockés en clair.<br>
+            ✅ Les sessions expirent automatiquement après 8h.<br>
+            ✅ Export CSV disponible pour les droits d'accès RGPD.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL: Ajouter/Modifier employé -->
+<div class="modal-bg" id="empModal">
+  <div class="modal">
+    <h3 id="empModalTitle">Ajouter un employé</h3>
+    <div class="form-group">
+      <label>Nom complet</label>
+      <input type="text" id="empName" placeholder="Jean Dupont">
+    </div>
+    <div class="form-group">
+      <label>NIP (4 à 8 chiffres)</label>
+      <input type="password" id="empPin" placeholder="••••" maxlength="8" inputmode="numeric">
+    </div>
+    <div class="form-group">
+      <label>Rôle</label>
+      <select id="empRole">
+        <option value="employee">Employé</option>
+        <option value="manager">Manager</option>
+      </select>
+    </div>
+    <div class="msg" id="modalMsg"></div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeEmpModal()">Annuler</button>
+      <button class="btn btn-primary" id="empSaveBtn" onclick="saveEmployee()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Confirm delete -->
+<div class="modal-bg" id="deleteModal">
+  <div class="modal">
+    <h3>Supprimer l'employé</h3>
+    <p class="text-sm" style="margin-bottom:1rem">Cette action supprime l'employé et <strong>tous ses pointages</strong>. Irréversible.</p>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Supprimer définitivement</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== STATE ======
+let pin = '';
+let recentPointings = [];
+let editingEmpId = null;
+let deletingEmpId = null;
+
+// ====== CLOCK ======
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('fr-FR');
+  document.getElementById('headerDate').textContent = now.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ====== NAVIGATION ======
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach((b,i) => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const idx = page === 'pointage' ? 0 : 1;
+  document.querySelectorAll('nav button')[idx].classList.add('active');
+  if (page === 'pointage') loadRecent();
+}
+
+// ====== NUMPAD ======
+function numpad(val) {
+  if (val === 'del') { pin = pin.slice(0,-1); }
+  else if (pin.length < 8) { pin += val; }
+  updatePinDisplay();
+}
+function clearPin() { pin = ''; updatePinDisplay(''); }
+function updatePinDisplay(cls = '') {
+  const d = document.getElementById('pinDisplay');
+  d.className = 'pin-display' + (cls ? ' ' + cls : '');
+  d.textContent = pin.length ? '●'.repeat(pin.length) : '· · · ·';
+}
+
+// ====== POINTAGE ======
+async function doPoint(type) {
+  if (pin.length < 4) {
+    const d = document.getElementById('pinDisplay');
+    d.classList.add('flash');
+    setTimeout(() => d.classList.remove('flash'), 1000);
+    return;
+  }
+  try {
+    const r = await fetch('/api/point', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({pin, type})
+    });
+    const data = await r.json();
+    if (data.success) {
+      const cls = type === 'in' ? 'success-in' : 'success-out';
+      const label = type === 'in' ? 'Arrivée' : 'Départ';
+      document.getElementById('pinDisplay').className = 'pin-display ' + cls;
+      document.getElementById('pinDisplay').textContent = `✓ ${data.name} — ${label}`;
+      recentPointings.unshift({name: data.name, type, time: data.time});
+      renderRecent();
+      setTimeout(() => { clearPin(); }, 2500);
+    } else {
+      document.getElementById('pinDisplay').className = 'pin-display error';
+      document.getElementById('pinDisplay').textContent = data.error || 'Erreur';
+      setTimeout(() => { updatePinDisplay(); }, 2000);
+    }
+  } catch(e) {
+    document.getElementById('pinDisplay').className = 'pin-display error';
+    document.getElementById('pinDisplay').textContent = 'Erreur serveur';
+    setTimeout(() => updatePinDisplay(), 2000);
+  }
+  pin = '';
+}
+
+async function loadRecent() {
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const r = await fetch(`/api/admin/pointings?from=${today}&to=${today}`, {credentials:'include'});
+    if (!r.ok) { renderRecent(); return; }
+    const data = await r.json();
+    recentPointings = data.slice(0,10).map(p => ({
+      name: p.name,
+      type: p.type,
+      time: p.timestamp.split(' ')[1]?.slice(0,5) || p.timestamp
+    }));
+    renderRecent();
+  } catch {}
+}
+
+function renderRecent() {
+  const el = document.getElementById('recentList');
+  if (recentPointings.length === 0) {
+    el.innerHTML = '<div class="empty-state text-sm">Aucun pointage aujourd\'hui</div>';
+    return;
+  }
+  el.innerHTML = recentPointings.slice(0,8).map(p => `
+    <div class="recent-item">
+      <span class="badge ${p.type === 'in' ? 'badge-in' : 'badge-out'}">${p.type === 'in' ? 'Arrivée' : 'Départ'}</span>
+      <span>${p.name}</span>
+      <span class="recent-time">${p.time}</span>
+    </div>
+  `).join('');
+}
+
+// ====== ADMIN LOGIN ======
+async function doLogin() {
+  const u = document.getElementById('adminUser').value;
+  const p = document.getElementById('adminPass').value;
+  const msg = document.getElementById('loginMsg');
+  msg.className = 'msg'; msg.textContent = '';
+  try {
+    const r = await fetch('/api/admin/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username:u, password:p}), credentials:'include'
+    });
+    const data = await r.json();
+    if (data.success) {
+      document.getElementById('adminLogin').style.display = 'none';
+      document.getElementById('adminDashboard').style.display = 'block';
+      loadEmployees();
+      initDateFilters();
+    } else {
+      msg.className = 'msg msg-err show'; msg.textContent = data.error;
+    }
+  } catch { msg.className='msg msg-err show'; msg.textContent='Erreur de connexion'; }
+}
+
+async function doLogout() {
+  await fetch('/api/admin/logout', {method:'POST', credentials:'include'});
+  document.getElementById('adminLogin').style.display = 'block';
+  document.getElementById('adminDashboard').style.display = 'none';
+}
+
+// ====== TAB SWITCH ======
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if (name === 'pointings') loadPointings();
+  if (name === 'summary') loadSummary();
+  if (name === 'employees') loadEmployees();
+}
+
+// ====== EMPLOYEES ======
+let employees = [];
+
+async function loadEmployees() {
+  const r = await fetch('/api/admin/employees', {credentials:'include'});
+  if (!r.ok) return;
+  employees = await r.json();
+  renderEmployees();
+  // Fill employee selects
+  const sel = document.getElementById('pEmployee');
+  sel.innerHTML = '<option value="">Tous</option>' + employees.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+}
+
+function renderEmployees() {
+  const tbody = document.getElementById('empBody');
+  if (employees.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Aucun employé</td></tr>'; return; }
+  tbody.innerHTML = employees.map(e => `
+    <tr>
+      <td><strong>${e.name}</strong></td>
+      <td class="text-sm text-muted">${e.role === 'manager' ? 'Manager' : 'Employé'}</td>
+      <td><span class="status-dot ${e.active ? 'dot-active' : 'dot-inactive'}"></span>${e.active ? 'Actif' : 'Inactif'}</td>
+      <td class="mono text-sm text-muted">${e.created_at?.slice(0,10)}</td>
+      <td>
+        <div class="flex-gap" style="justify-content:flex-end">
+          <button class="btn btn-ghost text-sm" onclick="openEditEmp(${e.id})" style="padding:0.3rem 0.6rem">Modifier</button>
+          <button class="btn btn-ghost text-sm" onclick="toggleActive(${e.id},${e.active})" style="padding:0.3rem 0.6rem">${e.active ? 'Désactiver' : 'Activer'}</button>
+          <button class="btn btn-ghost text-sm" onclick="openDeleteEmp(${e.id})" style="padding:0.3rem 0.6rem; color:var(--accent)">Supprimer</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openAddEmp() {
+  editingEmpId = null;
+  document.getElementById('empModalTitle').textContent = 'Ajouter un employé';
+  document.getElementById('empName').value = '';
+  document.getElementById('empPin').value = '';
+  document.getElementById('empRole').value = 'employee';
+  document.getElementById('modalMsg').className = 'msg';
+  document.getElementById('empModal').classList.add('show');
+}
+
+function openEditEmp(id) {
+  const emp = employees.find(e => e.id === id);
+  editingEmpId = id;
+  document.getElementById('empModalTitle').textContent = 'Modifier ' + emp.name;
+  document.getElementById('empName').value = emp.name;
+  document.getElementById('empPin').value = '';
+  document.getElementById('empRole').value = emp.role;
+  document.getElementById('modalMsg').className = 'msg';
+  document.getElementById('empModal').classList.add('show');
+}
+
+function closeEmpModal() { document.getElementById('empModal').classList.remove('show'); }
+
+async function saveEmployee() {
+  const name = document.getElementById('empName').value.trim();
+  const pin = document.getElementById('empPin').value.trim();
+  const role = document.getElementById('empRole').value;
+  const msg = document.getElementById('modalMsg');
+  if (!name) { msg.className='msg msg-err show'; msg.textContent='Nom requis'; return; }
+  if (!editingEmpId && (!pin || pin.length < 4)) { msg.className='msg msg-err show'; msg.textContent='NIP de 4 chiffres minimum'; return; }
+  const body = {name, role};
+  if (pin) body.pin = pin;
+  const url = editingEmpId ? `/api/admin/employees/${editingEmpId}` : '/api/admin/employees';
+  const method = editingEmpId ? 'PATCH' : 'POST';
+  const r = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), credentials:'include'});
+  const data = await r.json();
+  if (data.success || data.id) {
+    closeEmpModal();
+    loadEmployees();
+    showMsg('empMsg', 'Employé enregistré avec succès', true);
+  } else {
+    msg.className='msg msg-err show'; msg.textContent = data.error;
+  }
+}
+
+async function toggleActive(id, current) {
+  await fetch(`/api/admin/employees/${id}`, {
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({active: !current}), credentials:'include'
+  });
+  loadEmployees();
+}
+
+function openDeleteEmp(id) {
+  deletingEmpId = id;
+  document.getElementById('deleteModal').classList.add('show');
+}
+function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('show'); }
+async function confirmDelete() {
+  await fetch(`/api/admin/employees/${deletingEmpId}`, {method:'DELETE', credentials:'include'});
+  closeDeleteModal();
+  loadEmployees();
+  showMsg('empMsg', 'Employé supprimé', true);
+}
+
+// ====== POINTINGS ======
+function initDateFilters() {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('pFrom').value = today;
+  document.getElementById('pTo').value = today;
+  document.getElementById('sFrom').value = today;
+  document.getElementById('sTo').value = today;
+}
+
+async function loadPointings() {
+  const from = document.getElementById('pFrom').value;
+  const to = document.getElementById('pTo').value;
+  const emp = document.getElementById('pEmployee').value;
+  let url = `/api/admin/pointings?from=${from}&to=${to}`;
+  if (emp) url += `&employee_id=${emp}`;
+  const r = await fetch(url, {credentials:'include'});
+  if (!r.ok) return;
+  const data = await r.json();
+  const tbody = document.getElementById('pointBody');
+  if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Aucun pointage sur cette période</td></tr>'; return; }
+  tbody.innerHTML = data.map(p => {
+    const [date, time] = (p.timestamp || '').split(' ');
+    return `<tr>
+      <td><strong>${p.name}</strong></td>
+      <td><span class="badge ${p.type==='in'?'badge-in':'badge-out'}">${p.type==='in'?'Arrivée':'Départ'}</span></td>
+      <td class="mono text-sm">${date || ''}</td>
+      <td class="mono text-sm">${time?.slice(0,5) || ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadSummary() {
+  const from = document.getElementById('sFrom').value;
+  const to = document.getElementById('sTo').value;
+  const r = await fetch(`/api/admin/summary?from=${from}&to=${to}`, {credentials:'include'});
+  if (!r.ok) return;
+  const data = await r.json();
+  const grid = document.getElementById('summaryGrid');
+  if (data.length === 0) { grid.innerHTML = '<div class="empty-state">Aucune donnée</div>'; return; }
+  grid.innerHTML = data.map(e => `
+    <div class="summary-card">
+      <div class="summary-name">${e.name}</div>
+      <div class="summary-detail">Arrivées : <span>${e.ins || 0}</span></div>
+      <div class="summary-detail">Départs : <span>${e.outs || 0}</span></div>
+      ${e.first_in ? `<div class="summary-detail">1er pointage : <span>${e.first_in.split(' ')[1]?.slice(0,5)}</span></div>` : ''}
+      ${e.last_out ? `<div class="summary-detail">Dernier départ : <span>${e.last_out.split(' ')[1]?.slice(0,5)}</span></div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ====== EXPORT ======
+function exportCsv() {
+  const from = document.getElementById('pFrom').value;
+  const to = document.getElementById('pTo').value;
+  window.open(`/api/admin/export/csv?from=${from}&to=${to}`, '_blank');
+}
+
+// ====== PASSWORD ======
+async function changePassword() {
+  const current = document.getElementById('pwCurrent').value;
+  const newP = document.getElementById('pwNew').value;
+  const confirm = document.getElementById('pwConfirm').value;
+  const msg = document.getElementById('pwMsg');
+  if (newP !== confirm) { msg.className='msg msg-err show'; msg.textContent='Les mots de passe ne correspondent pas'; return; }
+  const r = await fetch('/api/admin/change-password', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({current, newPassword:newP}), credentials:'include'
+  });
+  const data = await r.json();
+  msg.className = 'msg ' + (data.success ? 'msg-ok' : 'msg-err') + ' show';
+  msg.textContent = data.success ? 'Mot de passe mis à jour !' : data.error;
+  if (data.success) { document.getElementById('pwCurrent').value=''; document.getElementById('pwNew').value=''; document.getElementById('pwConfirm').value=''; }
+}
+
+// ====== UTILS ======
+function showMsg(id, text, ok=true) {
+  const el = document.getElementById(id);
+  el.className = 'msg ' + (ok?'msg-ok':'msg-err') + ' show';
+  el.textContent = text;
+  setTimeout(() => el.className='msg', 3000);
+}
+
+// Init
+loadRecent();
+</script>
+</body>
+</html>
